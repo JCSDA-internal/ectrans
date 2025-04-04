@@ -224,6 +224,7 @@ real(kind=jprb), allocatable :: global_field(:,:)
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
+#include "trans_end.h"
 
 !===================================================================================================
 
@@ -737,12 +738,12 @@ do jstep = 1, iters+iters_warmup
           zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
           zmaxerr(4) = max(zmaxerr(4), zerr(4))
         enddo
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+        write(nout,'("time step ",i6," took", f8.4," | zspvor max err=",e10.3,&
+                    & " | zspdiv max err=",e10.3," | zspsc3a max err=",e10.3," | zspsc2 max err=",e10.3)') &
                     &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
       else
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc2 max err="e10.3)') &
+        write(nout,'("time step ",i6," took", f8.4," | zspvor max err=",e10.3,&
+                    & " | zspdiv max err=",e10.3," | zspsc2 max err=",e10.3)') &
                     &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(1)
       endif
     endif
@@ -961,6 +962,8 @@ if (lmeminfo) then
   call ec_meminfo(nout, "", mpl_comm, kbarr=1, kiotask=-1, &
       & kcall=1)
 endif
+
+call trans_end
 
 !===================================================================================================
 ! Finalize MPI

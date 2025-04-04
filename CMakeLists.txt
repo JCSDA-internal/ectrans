@@ -185,6 +185,13 @@ ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
 
+	   
+ecbuild_add_option( FEATURE ECTRANS4PY
+                    DEFAULT OFF
+		    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
+                    DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
+
+
 ectrans_find_lapack()
 
 ecbuild_add_option( FEATURE TESTS

@@ -17,7 +17,7 @@ module openacc_ext_type
   end type
 end module
 module openacc_ext
-  use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
+  use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof, c_f_pointer
 #ifdef ACCGPU
   use openacc, only: acc_handle_kind
 #endif
@@ -290,6 +290,7 @@ contains
       !$acc enter data create(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target enter data map(alloc:pp)
 #endif
     enddo
   end subroutine
@@ -327,6 +328,7 @@ contains
       !$acc enter data copyin(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target enter data map(to:pp)
 #endif
     enddo
   end subroutine
@@ -363,6 +365,7 @@ contains
       !$acc exit data copyout(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target exit data map(from:pp)
 #endif
     enddo
   end subroutine
@@ -399,6 +402,7 @@ contains
       !$acc exit data delete(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target exit data map(delete:pp)
 #endif
     enddo
   end subroutine

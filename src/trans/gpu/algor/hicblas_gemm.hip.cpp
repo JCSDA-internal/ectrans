@@ -25,11 +25,7 @@
 bool hip_alreadyAllocated_sgemm = false;
 bool hip_alreadyAllocated_sgemm_handle = false;
 
-bool hip_alreadyAllocated_dsgemm = false;
-bool hip_alreadyAllocated_dgemm_handle = false;
-
 hipblasHandle_t handle_hip_sgemm;
-hipblasHandle_t handle_hip_dgemm;
 
 namespace {
 struct cache_key {
@@ -200,7 +196,9 @@ public:
                   const Real *A, int lda, const Real *B, int ldb, Real beta,
                   Real *C, int ldc) const {
     hipblasHandle_t handle = get_hipblas_handle();
+#ifdef ACCGPU
     HICBLAS_CHECK(hipblasSetStream(handle, stream));
+#endif
 
     if constexpr (std::is_same<Real, float>::value)
       HICBLAS_CHECK(hipblasSgemm(handle, transa_, transb_, m, n, k, &alpha, A,
@@ -278,10 +276,6 @@ void hipblas_dgemm_wrapper(char transa, char transb, int m, int n, int k,
   if (transb == 'T' || transb == 't')
     op_t2 = HIPBLAS_OP_T;
 
-  if (!hip_alreadyAllocated_dgemm_handle) {
-    HICBLAS_CHECK(hipblasCreate(&handle_hip_dgemm));
-    hip_alreadyAllocated_dgemm_handle = true;
-  }
   hipblasHandle_t handle = get_hipblas_handle();
   HICBLAS_CHECK(hipblasSetStream(handle, *(hipStream_t *)stream));
 

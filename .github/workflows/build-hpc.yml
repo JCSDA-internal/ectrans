@@ -57,17 +57,19 @@ jobs:
               - prgenv/nvidia
               - hpcx-openmpi/2.14.0-cuda
               - fftw
+            cmake_options: -DENABLE_ACC=ON
 
           - name: lumi-g cce
             site: lumi
             troika_user_secret: LUMI_CI_SSH_USER
+            account_secret: LUMI_CI_PROJECT
             sbatch_options: |
               #SBATCH --time=00:20:00
               #SBATCH --nodes=1
               #SBATCH --ntasks-per-node=8
               #SBATCH --gpus-per-task=1
               #SBATCH --partition=dev-g
-              #SBATCH --account=project_465000527
+              #SBATCH --account={0}
             modules:
               - CrayEnv
               - PrgEnv-cray
@@ -76,10 +78,16 @@ jobs:
               - rocm/6.0.3
               - cray-fftw
               - buildtools
-            output_dir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
-            workdir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
-            cmake_options: -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
-            ctest_options: -E gpu
+            output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}
+            workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}
+            cmake_options: >
+              -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp
+              -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
+              -DENABLE_OMP=ON
+            env_vars:
+              - ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
+              - MPICH_GPU_SUPPORT_ENABLED=1
+              - MPICH_SMP_SINGLE_COPY_MODE=NONE
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -90,15 +98,16 @@ jobs:
         with:
           site: ${{ matrix.site }}
           troika_user: ${{ secrets[matrix.troika_user_secret] }}
-          sbatch_options: ${{ matrix.sbatch_options }}
-          output_dir: ${{ matrix.output_dir || '' }}
-          workdir: ${{ matrix.workdir || '' }}
+          sbatch_options: ${{ format(matrix.sbatch_options, secrets[matrix.account_secret]) }}
+          output_dir: ${{ format(matrix.output_dir, secrets[matrix.account_secret]) || '' }}
+          workdir: ${{ format(matrix.workdir, secrets[matrix.account_secret]) || '' }}
           template_data: |
             cmake_options:
               - -DENABLE_MPI=ON
-              - -DENABLE_ACC=ON
               - -DENABLE_GPU=ON
               - -DENABLE_ETRANS=ON
+              - -DENABLE_GPU_GRAPHS_GEMM=OFF
+              - -DENABLE_GPU_GRAPHS_FFT=OFF
               - ${{ matrix.cmake_options || '' }}
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
@@ -150,6 +159,11 @@ jobs:
               {% endfor %}
               {{ cmake_options|join(' ') }}
             cmake --build build
+
+            {% for var in "${{ join(matrix.env_vars, ',') }}".split(',') %}
+              export {{var}}
+            {% endfor %}
+
             ctest --test-dir build --output-on-failure {{ ctest_options }}
 
             {% for name in dependencies.keys() %}
